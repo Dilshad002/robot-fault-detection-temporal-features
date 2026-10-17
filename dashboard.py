@@ -1,4 +1,3 @@
-# dashboard.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -35,9 +34,8 @@ def load_model(path):
         st.error(f"Model file not found: {path}. Run training script first.")
         return None
     obj = joblib.load(path)
-    # If old code saved a dict like {"model": model}
+    
     if isinstance(obj, dict):
-        # heuristics: pick first value that has predict()
         for v in obj.values():
             if hasattr(v, "predict"):
                 return v
@@ -58,13 +56,13 @@ if mode == "Upload CSV sample":
     uploaded = st.sidebar.file_uploader("Upload a single-row CSV (90 cols) or merged file", type=['csv'])
     if uploaded:
         df = pd.read_csv(uploaded)
-        # If merged file with many rows, let user pick row
+        
         if df.shape[0] > 1:
             idx = st.sidebar.number_input("Row index", min_value=0, max_value=df.shape[0]-1, value=0)
             row = df.iloc[idx]
         else:
             row = df.iloc[0]
-        # take first 90 numeric columns
+        
         arr90 = row.iloc[:90].values
         feats_dict, l2_ts = extract_l2_features_array(arr90)
         feats_df = pd.DataFrame([feats_dict])
@@ -99,7 +97,7 @@ st.header("Result")
 if prediction == 0:
     st.success(f"Prediction: {label_map.get(prediction, prediction)}" + (f" — confidence {conf:.2f}" if conf is not None else ""))
 else:
-    # cinematic highlight for faults
+    
     st.markdown("<div style='background:#be1616;padding:12px;border-radius:6px;color:white;font-weight:bold;font-size:22px;'>!!! FAULT DETECTED — ATTENTION REQUIRED !!!</div>", unsafe_allow_html=True)
     st.error(f"Prediction: {label_map.get(prediction, prediction)}" + (f" — confidence {conf:.2f}" if conf is not None else ""))
 

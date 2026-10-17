@@ -1,4 +1,3 @@
-# train_and_save.py
 import os
 import argparse
 import joblib
@@ -76,7 +75,7 @@ def main(args):
 
     meas_cols = list(df.columns[:90])
     n_before = len(df)
-    df = df.drop_duplicates(subset=meas_cols).reset_index(drop=True)   # safety net: no copies across folds
+    df = df.drop_duplicates(subset=meas_cols).reset_index(drop=True)  
     if len(df) != n_before:
         print(f"Dropped {n_before - len(df)} duplicate samples ({n_before} -> {len(df)})")
     print("Class counts (0=normal, 1=fault):", np.bincount(df['label'].astype(int).values).tolist())
@@ -88,7 +87,6 @@ def main(args):
     X_feats = build_feature_dataframe(X_raw)
     print("Feature shape:", X_feats.shape)
 
-    # --- single hold-out split (same style as before, for the console figure) ---
     X_train, X_test, y_train, y_test = train_test_split(
         X_feats, y, test_size=0.2, random_state=42, stratify=y)
     pipeline = make_pipeline()
@@ -102,13 +100,11 @@ def main(args):
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
 
-    # --- more reliable estimate: repeated 5-fold CV, with a raw-value baseline ---
     print("\nRepeated stratified 5-fold CV (5 repeats), mean +- std over repeats:")
     cross_validate(X_feats.values, y, "10 engineered features")
     cross_validate(X_raw.values.astype(float), y, "90 raw values (baseline)")
     print(f"  majority-class guess     acc {max(np.bincount(y)) / len(y):.3f} | bal.acc 0.500")
 
-    # --- final model for the dashboard: fit on ALL unique samples ---
     final = make_pipeline().fit(X_feats, y)
     model_path = os.path.join("model", "fault_detection_model.pkl")
     print("\nSaving final pipeline (trained on all unique samples) to", model_path)

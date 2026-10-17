@@ -4,9 +4,8 @@ import numpy as np
 
 DATA_DIR = "data"
 OUT_FILE = os.path.join(DATA_DIR, "robotexec_merged.csv")
-BINARY = True   # set False to preserve multiclass (distinct integers per text class)
+BINARY = True   
 
-# Class names that mean "no fault". LP3 calls its normal class "ok"; the other files use "normal".
 NORMAL_NAMES = {"normal", "ok"}
 
 
@@ -18,7 +17,6 @@ def detect_label_column(df):
 
 
 def sanitize_row_block(df):
-    # Return only numeric measurement columns (prefer first 90 numeric columns)
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     if len(numeric_cols) >= 90:
         return df[numeric_cols[:90]]
@@ -66,7 +64,6 @@ def process_file(path, binary=True):
 
     if label_col == 'class':
         txt_series = df['class']
-        # Show exactly how each text class is mapped, so mislabelling is visible.
         print("  class counts:", txt_series.value_counts().to_dict())
         if binary:
             label_series = map_text_label_series(txt_series, binary=True)
@@ -98,8 +95,7 @@ def process_file(path, binary=True):
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
-    # Only the five original LP files. A bare "*.csv" would also pick up the merged
-    # output and the train/test splits from earlier runs and silently duplicate the data.
+
     files = sorted(glob.glob(os.path.join(DATA_DIR, "lp*.csv")))
     if not files:
         print(f"No lp*.csv files found in {DATA_DIR}. Place lp1.csv ... lp5.csv there, then run again.")
@@ -131,8 +127,6 @@ def main():
     print(f"\nBefore de-duplication: {merged.shape[0]} rows "
           f"(normal={int((merged.label == 0).sum())}, fault={int((merged.label == 1).sum())})")
 
-    # The LP files overlap (e.g. LP4 is contained in LP5), so identical 90-value samples
-    # appear several times. Keep one copy; otherwise copies land in both train and test.
     meas_cols = [f'col{i+1}' for i in range(90)]
     conflict = merged.groupby(meas_cols).label.nunique()
     if (conflict > 1).any():
@@ -141,7 +135,7 @@ def main():
     print(f"After de-duplication:  {merged.shape[0]} rows "
           f"(normal={int((merged.label == 0).sum())}, fault={int((merged.label == 1).sum())})")
 
-    merged = merged[meas_cols + ['label']]   # same layout as before: col1..col90, label
+    merged = merged[meas_cols + ['label']] 
     merged.to_csv(OUT_FILE, index=False)
     print(f"Saved {OUT_FILE}. Skipped files: {skipped}")
 
